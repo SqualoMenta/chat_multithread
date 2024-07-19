@@ -1,0 +1,9 @@
+[package]
+name = "client"
+version = "0.1.0"
+edition = "2021"
+authors = ["Andrea Monaco <andreamonaco2912@gmail.com>"]
+description = "A client software that connects to the server of the chat"
+repository = "https://github.com/SqualoMenta/chat_multithread.git"
+
+[dependencies]
