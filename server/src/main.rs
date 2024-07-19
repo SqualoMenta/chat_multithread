@@ -4,7 +4,7 @@ use std::{
     net::{TcpListener, TcpStream},
     str,
     sync::{Arc, Mutex},
-    thread,
+    thread::{self, sleep},
     time::Duration,
 };
 
@@ -68,6 +68,9 @@ fn client_handler(
             .unwrap();
         let message = format!("{name} si è unito alla chat");
         broadcast(message, Arc::clone(&connections));
+        stream
+            .set_read_timeout(Some(Duration::from_millis(10)))
+            .unwrap();
         let mut map = connections.lock().unwrap();
         let astream = Arc::new(Mutex::new(stream));
         map.insert(name.to_string(), Arc::clone(&astream));
@@ -76,12 +79,23 @@ fn client_handler(
             let mut buffer = [0; DEFAULT_BUF_SIZE];
             let mut strm = astream.lock().unwrap();
             let len = match strm.read(&mut buffer[..]) {
-                Ok(usize) => usize,
-                Err(e) => {
-                    eprintln!("{:?}, {e}", ConnectionError::BadFormat);
-                    return;
+                Ok(len) => len,
+                Err(ref e) if e.kind() == io::ErrorKind::TimedOut => {
+                    drop(strm); // Release the lock to update messages
+                    sleep(Duration::from_millis(100));
+                    continue;
+                }
+                Err(_) => {
+                    eprintln!("{:?}", ConnectionError::BadFormat); //Could also mean somebodi left
+                    drop(strm); // Release the lock
+                    let msg = format!("{name} left the chat");
+                    println!("{msg}");
+                    connections.lock().unwrap().remove(name);
+                    broadcast(msg, Arc::clone(&connections));
+                    break;
                 }
             };
+            drop(strm);
             if len > 0 && len < DEFAULT_BUF_SIZE {
                 let valid_length = buffer.iter().position(|&x| x == 0).unwrap_or(len);
                 let scritte = &buffer[0..valid_length];
@@ -90,6 +104,7 @@ fn client_handler(
                 broadcast(message, Arc::clone(&connections));
             } else {
                 let msg = format!("{name} left the chat");
+                println!("{msg}");
                 connections.lock().unwrap().remove(name);
                 broadcast(msg, Arc::clone(&connections));
                 break;
