@@ -1,0 +1,10 @@
+[package]
+name = "chat_multithread"
+version = "0.1.0"
+edition = "2021"
+authors = ["Andrea Monaco <andreamonaco2912@gmail.com>"]
+description = "A client-server software that runs a TCP chat"
+readme = "readme.md"
+repository = ""
+
+[dependencies]
