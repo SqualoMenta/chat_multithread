@@ -82,11 +82,11 @@ fn client_handler(
                 Ok(len) => len,
                 Err(ref e) if e.kind() == io::ErrorKind::TimedOut => {
                     drop(strm); // Release the lock to update messages
-                    sleep(Duration::from_millis(100));
+                    sleep(Duration::from_millis(100)); //takes some time to assure broadcast function takes the lock
                     continue;
                 }
                 Err(_) => {
-                    eprintln!("{:?}", ConnectionError::BadFormat); //Could also mean somebodi left
+                    eprintln!("{:?}", ConnectionError::BadFormat); //Could also mean somebody left
                     drop(strm); // Release the lock
                     let msg = format!("{name} left the chat");
                     println!("{msg}");
